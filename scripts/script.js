@@ -1,9 +1,9 @@
-import { getAppUrl, isSupabaseConfigured, supabase } from "./supabase-config.js";
+﻿import { getAppUrl, isSupabaseConfigured, supabase } from "./supabase-config.js";
 import { FRONTEND_CONFIG } from "./app-config.js";
 
 const APP_CONFIG = {
   proxyBaseUrl: FRONTEND_CONFIG.proxyBaseUrl,
-  llmModel: "meta-llama/llama-3.3-70b-instruct",
+  llmModel: "llama-3.3-70b-versatile",
   llmTemperature: 0.2,
   llmMaxTokens: 280,
 };
@@ -449,7 +449,7 @@ function normalizeError(error) {
   return "Ocurrio un error inesperado durante el procesamiento.";
 }
 
-// ── Sidebar ──────────────────────────────────────────────────────────────────
+// â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function initSidebar() {
   await loadUserProfile();
@@ -945,3 +945,4 @@ function setSidebarOpen(open) {
   elements.sidebarOverlay?.classList.toggle("is-visible", open);
   if (elements.sidebarToggle) elements.sidebarToggle.setAttribute("aria-expanded", String(open));
 }
+

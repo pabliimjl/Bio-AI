@@ -1,4 +1,4 @@
-const CORS_HEADERS = {
+﻿const CORS_HEADERS = {
   "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type,Authorization",
 };
@@ -104,7 +104,7 @@ async function handleLlmRequest(request, env, origin) {
 
   const provider = (env.LLM_PROVIDER || "groq").toLowerCase();
   const endpoint = resolveLlmEndpoint(provider, env.LLM_ENDPOINT);
-  const model = String(body?.model || env.LLM_MODEL || defaultModelForProvider(provider));
+  const model = resolveModelForProvider(provider, body?.model, env.LLM_MODEL);
   const temperature = Number.isFinite(body?.temperature) ? body.temperature : Number(env.LLM_TEMPERATURE || 0.2);
   const maxTokens = Number.isFinite(body?.max_tokens) ? body.max_tokens : Number(env.LLM_MAX_TOKENS || 280);
 
@@ -200,3 +200,4 @@ function normalizeError(error) {
 
   return "Error no controlado en el Worker.";
 }
+
