@@ -8,6 +8,9 @@ const APP_CONFIG = {
   llmMaxTokens: 280,
 };
 
+const OCR_PDF_PAGE_LIMIT = 3;
+let pdfLibPromise;
+
 const state = {
   selectedFile: null,
   previewUrl: "",
@@ -375,6 +378,64 @@ async function requestClinicalAnalysis({ reportText, instruction }) {
 }
 
 async function extractTextWithOcrSpace(file) {
+  if (file.type === "application/pdf") {
+    return extractTextFromPdfInChunks(file);
+  }
+
+  return extractTextWithOcrFile(file);
+}
+
+async function extractTextFromPdfInChunks(file) {
+  let PDFDocument;
+  try {
+    ({ PDFDocument } = await loadPdfLib());
+  } catch {
+    addMessage("system", "No pude dividir el PDF en bloques. Intento procesarlo completo en OCR.Space.");
+    return extractTextWithOcrFile(file);
+  }
+
+  const sourceBytes = await file.arrayBuffer();
+  const sourcePdf = await PDFDocument.load(sourceBytes);
+  const totalPages = sourcePdf.getPageCount();
+
+  if (totalPages <= OCR_PDF_PAGE_LIMIT) {
+    return extractTextWithOcrFile(file);
+  }
+
+  addMessage("system", `PDF de ${totalPages} paginas detectado. Lo proceso en bloques de ${OCR_PDF_PAGE_LIMIT} paginas para evitar el limite de OCR.`);
+
+  const parts = [];
+  for (let startIndex = 0; startIndex < totalPages; startIndex += OCR_PDF_PAGE_LIMIT) {
+    const endIndex = Math.min(startIndex + OCR_PDF_PAGE_LIMIT, totalPages);
+    setStatus(`OCR PDF: paginas ${startIndex + 1}-${endIndex} de ${totalPages}`);
+
+    const chunkPdf = await PDFDocument.create();
+    const indexes = Array.from({ length: endIndex - startIndex }, (_, offset) => startIndex + offset);
+    const copiedPages = await chunkPdf.copyPages(sourcePdf, indexes);
+    copiedPages.forEach((page) => chunkPdf.addPage(page));
+
+    const chunkBytes = await chunkPdf.save();
+    const chunkFile = new File([
+      chunkBytes,
+    ], `${removeFileExtension(file.name)}_p${startIndex + 1}-${endIndex}.pdf`, {
+      type: "application/pdf",
+    });
+
+    const chunkText = await extractTextWithOcrFile(chunkFile);
+    if (chunkText) {
+      parts.push(`[Paginas ${startIndex + 1}-${endIndex}]\n${chunkText}`);
+    }
+  }
+
+  const mergedText = parts.join("\n\n").trim();
+  if (!mergedText) {
+    throw new Error("No se pudo extraer texto utilizable del PDF.");
+  }
+
+  return mergedText;
+}
+
+async function extractTextWithOcrFile(file) {
   const ocrProxyUrl = getProxyUrl("/api/ocr");
   const formData = new FormData();
   formData.append("file", file);
@@ -395,21 +456,51 @@ async function extractTextWithOcrSpace(file) {
   }
 
   const data = await response.json();
-  if (data.IsErroredOnProcessing) {
-    const errorMessage = Array.isArray(data.ErrorMessage) ? data.ErrorMessage.join(" | ") : data.ErrorMessage;
-    throw new Error(errorMessage || "OCR.space no pudo procesar la imagen.");
-  }
-
   const parsedText = (data.ParsedResults || [])
     .map((result) => result.ParsedText || "")
     .join("\n")
     .trim();
+
+  const errorMessage = [
+    Array.isArray(data.ErrorMessage) ? data.ErrorMessage.join(" | ") : data.ErrorMessage,
+    Array.isArray(data.WarningMessage) ? data.WarningMessage.join(" | ") : data.WarningMessage,
+    data.ErrorDetails,
+  ]
+    .filter(Boolean)
+    .join(" | ");
+
+  const reachedPageLimit = /maximum page limit of 3|page limit of 3/i.test(errorMessage);
+
+  if (data.IsErroredOnProcessing) {
+    if (parsedText && reachedPageLimit) {
+      addMessage("system", "OCR.Space limito el PDF a 3 paginas en este plan. Continuo con el analisis usando solo esas paginas.");
+      return parsedText;
+    }
+
+    throw new Error(errorMessage || "OCR.space no pudo procesar la imagen.");
+  }
+
+  if (parsedText && reachedPageLimit) {
+    addMessage("system", "OCR.Space limito el PDF a 3 paginas en este plan. Continuo con el analisis usando solo esas paginas.");
+  }
 
   if (!parsedText) {
     throw new Error("El OCR no devolvio texto utilizable.");
   }
 
   return parsedText;
+}
+
+async function loadPdfLib() {
+  if (!pdfLibPromise) {
+    pdfLibPromise = import("https://esm.sh/pdf-lib@1.17.1");
+  }
+
+  return pdfLibPromise;
+}
+
+function removeFileExtension(filename) {
+  return filename.replace(/\.[^.]+$/, "") || "documento";
 }
 
 async function callLlmApi(messages) {
