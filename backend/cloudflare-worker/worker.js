@@ -147,6 +147,25 @@ function handleSupabaseConfigRequest(env, origin) {
   return jsonResponse({ supabaseUrl, supabaseAnonKey }, 200, origin, env.ALLOWED_ORIGIN);
 }
 
+function resolveModelForProvider(provider, requestedModel, envModel) {
+  const defaultModel = String(envModel || defaultModelForProvider(provider));
+  const model = String(requestedModel || defaultModel).trim();
+
+  if (!model) {
+    return defaultModel;
+  }
+
+  if (provider === "groq" && model === "meta-llama/llama-3.3-70b-instruct") {
+    return defaultModelForProvider(provider);
+  }
+
+  if (provider === "openrouter" && model === "llama-3.3-70b-versatile") {
+    return defaultModelForProvider(provider);
+  }
+
+  return model;
+}
+
 function resolveLlmEndpoint(provider, customEndpoint) {
   if (customEndpoint && customEndpoint.trim()) {
     return customEndpoint.trim();
@@ -200,4 +219,5 @@ function normalizeError(error) {
 
   return "Error no controlado en el Worker.";
 }
+
 
