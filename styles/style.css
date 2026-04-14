@@ -1089,6 +1089,26 @@ body.theme-old .composer {
   box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.15);
 }
 
+.media-picker-card {
+  width: min(92vw, 420px);
+}
+
+.media-picker-actions {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.media-picker-actions .btn {
+  width: 100%;
+  padding: 12px 14px;
+}
+
+.media-picker-cancel {
+  width: 100%;
+  margin-top: 10px;
+}
+
 body.theme-old .confirm-modal-card {
   border-color: rgba(42, 54, 48, 0.18);
   background: rgba(255, 250, 243, 0.98);

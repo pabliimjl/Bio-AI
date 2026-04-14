@@ -22,7 +22,10 @@ const state = {
 const THEME_STORAGE_KEY = "appbq-theme";
 
 const elements = {
+  cameraInput: document.querySelector("#cameraInput"),
   imageInput: document.querySelector("#imageInput"),
+  fileInput: document.querySelector("#fileInput"),
+  mediaPickerButton: document.querySelector("#mediaPickerButton"),
   messages: document.querySelector("#messages"),
   appStatus: document.querySelector("#appStatus"),
   chatForm: document.querySelector("#chatForm"),
@@ -47,6 +50,12 @@ const elements = {
   renameModalInput: document.querySelector("#renameModalInput"),
   renameModalCancel: document.querySelector("#renameModalCancel"),
   renameModalConfirm: document.querySelector("#renameModalConfirm"),
+  mediaPickerModal: document.querySelector("#mediaPickerModal"),
+  mediaPickerBackdrop: document.querySelector("#mediaPickerBackdrop"),
+  mediaPickerCamera: document.querySelector("#mediaPickerCamera"),
+  mediaPickerPhotos: document.querySelector("#mediaPickerPhotos"),
+  mediaPickerFile: document.querySelector("#mediaPickerFile"),
+  mediaPickerCancel: document.querySelector("#mediaPickerCancel"),
 };
 
 bootstrap();
@@ -66,19 +75,82 @@ async function bootstrap() {
     renderMessage("system", "Configura APP_CONFIG.proxyBaseUrl en script.js con la URL de tu backend proxy antes de usar OCR o el modelo.");
   }
 
+  elements.cameraInput.addEventListener("change", handleImageSelection);
   elements.imageInput.addEventListener("change", handleImageSelection);
+  elements.fileInput.addEventListener("change", handleImageSelection);
+  elements.cameraInput.addEventListener("click", resetImageInputValue);
   elements.imageInput.addEventListener("click", resetImageInputValue);
+  elements.fileInput.addEventListener("click", resetImageInputValue);
+  elements.mediaPickerButton.addEventListener("click", handleMediaPickerButtonClick);
+  elements.mediaPickerBackdrop?.addEventListener("click", closeMediaPickerModal);
+  elements.mediaPickerCancel?.addEventListener("click", closeMediaPickerModal);
+  elements.mediaPickerCamera?.addEventListener("click", () => openFileSource(elements.cameraInput));
+  elements.mediaPickerPhotos?.addEventListener("click", () => openFileSource(elements.imageInput));
+  elements.mediaPickerFile?.addEventListener("click", () => openFileSource(elements.fileInput));
   elements.chatForm.addEventListener("submit", handleFollowUp);
   elements.chatInput.addEventListener("keydown", handleChatInputKeydown);
 }
 
 function resetImageInputValue() {
-  if (!elements.imageInput) {
+  const inputElement = this instanceof HTMLInputElement ? this : null;
+  if (!inputElement) {
     return;
   }
 
   // Permite que el evento change se dispare siempre, incluso si se repite archivo.
-  elements.imageInput.value = "";
+  inputElement.value = "";
+}
+
+function handleMediaPickerButtonClick(event) {
+  event.preventDefault();
+
+  if (!shouldUseMobileMediaPicker()) {
+    openFileSource(elements.imageInput);
+    return;
+  }
+
+  openMediaPickerModal();
+}
+
+function shouldUseMobileMediaPicker() {
+  return Boolean(window.matchMedia?.("(hover: none) and (pointer: coarse)")?.matches || navigator.maxTouchPoints > 0);
+}
+
+function openMediaPickerModal() {
+  if (!elements.mediaPickerModal) {
+    openFileSource(elements.imageInput);
+    return;
+  }
+
+  elements.mediaPickerModal.classList.add("is-open");
+  elements.mediaPickerModal.setAttribute("aria-hidden", "false");
+  document.addEventListener("keydown", handleMediaPickerKeydown);
+}
+
+function closeMediaPickerModal() {
+  if (!elements.mediaPickerModal) {
+    return;
+  }
+
+  elements.mediaPickerModal.classList.remove("is-open");
+  elements.mediaPickerModal.setAttribute("aria-hidden", "true");
+  document.removeEventListener("keydown", handleMediaPickerKeydown);
+}
+
+function handleMediaPickerKeydown(event) {
+  if (event.key === "Escape") {
+    closeMediaPickerModal();
+  }
+}
+
+function openFileSource(inputElement) {
+  if (!(inputElement instanceof HTMLInputElement)) {
+    return;
+  }
+
+  closeMediaPickerModal();
+  inputElement.value = "";
+  inputElement.click();
 }
 
 function handleChatInputKeydown(event) {
@@ -161,8 +233,8 @@ async function handleImageSelection(event) {
     return;
   }
 
-  if (!file.type.startsWith("image/")) {
-    addMessage("system", "El archivo seleccionado no es una imagen valida.");
+  if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
+    addMessage("system", "El archivo seleccionado debe ser imagen o PDF.");
     return;
   }
 
@@ -882,7 +954,9 @@ async function selectConversation(id) {
   state.conversation = data.data?.conversation || [];
   state.displayMessages = data.data?.displayMessages || [];
   state.selectedFile = null;
-  resetImageInputValue();
+  elements.cameraInput.value = "";
+  elements.imageInput.value = "";
+  elements.fileInput.value = "";
 
   elements.messages.innerHTML = "";
   for (const msg of state.displayMessages) {
@@ -946,7 +1020,9 @@ function startNewChat() {
   state.currentConversationId = null;
 
   elements.messages.innerHTML = "";
-  resetImageInputValue();
+  elements.cameraInput.value = "";
+  elements.imageInput.value = "";
+  elements.fileInput.value = "";
   renderMessage("assistant", "Pega valores del laboratorio o saca una foto del informe. El OCR y el analisis se ejecutan automaticamente. Luego puedes hacer preguntas de seguimiento.");
 
   document.querySelectorAll(".history-item").forEach(item => item.classList.remove("is-active"));

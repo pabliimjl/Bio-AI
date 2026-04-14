@@ -57,16 +57,18 @@
         <div id="messages" class="messages"></div>
 
         <form id="chatForm" class="composer">
-          <input id="imageInput" type="file" accept="image/*" capture="environment" hidden />
+          <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
+          <input id="imageInput" type="file" accept="image/*" hidden />
+          <input id="fileInput" type="file" accept="image/*,.pdf" hidden />
           <label class="sr-only" for="chatInput">Escribe valores o tu pregunta</label>
           <div class="composer-input-wrap">
             <textarea id="chatInput" rows="3" placeholder="Pega valores del laboratorio o escribe tu pregunta. Usa el icono de camara para escanear un informe."></textarea>
             <div class="composer-actions">
-              <label class="icon-camera" for="imageInput" title="Sacar o subir foto del informe">
+              <button id="mediaPickerButton" class="icon-camera" type="button" title="Sacar o subir foto del informe" aria-label="Abrir selector de imagen">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M9 4.5 7.6 6H5.5A2.5 2.5 0 0 0 3 8.5v9A2.5 2.5 0 0 0 5.5 20h13a2.5 2.5 0 0 0 2.5-2.5v-9A2.5 2.5 0 0 0 18.5 6h-2.1L15 4.5H9Zm3 4a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Zm0 1.5a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" />
                 </svg>
-              </label>
+              </button>
               <button id="sendButton" class="btn btn-primary btn-send" type="submit" aria-label="Enviar mensaje" title="Enviar">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M3.4 20.6 21 12 3.4 3.4l.2 6.5 9.9 2.1-9.9 2.1-.2 6.5Z" />
@@ -107,6 +109,20 @@
         <button id="renameModalCancel" type="button" class="btn btn-ghost">Cancelar</button>
         <button id="renameModalConfirm" type="button" class="btn btn-primary">Guardar</button>
       </div>
+    </div>
+  </div>
+
+  <div id="mediaPickerModal" class="confirm-modal" aria-hidden="true">
+    <div class="confirm-modal-backdrop" id="mediaPickerBackdrop"></div>
+    <div class="confirm-modal-card media-picker-card" role="dialog" aria-modal="true" aria-labelledby="mediaPickerTitle">
+      <h3 id="mediaPickerTitle" class="confirm-modal-title">Selecciona una opcion</h3>
+      <p class="confirm-modal-text">Puedes tomar una foto, elegir una desde tu galeria o subir un archivo.</p>
+      <div class="media-picker-actions">
+        <button id="mediaPickerCamera" type="button" class="btn btn-primary">Abrir camara</button>
+        <button id="mediaPickerPhotos" type="button" class="btn btn-ghost">Abrir fotos</button>
+        <button id="mediaPickerFile" type="button" class="btn btn-ghost">Subir archivo</button>
+      </div>
+      <button id="mediaPickerCancel" type="button" class="btn btn-ghost media-picker-cancel">Cancelar</button>
     </div>
   </div>
 
