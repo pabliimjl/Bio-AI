@@ -1,7 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { FRONTEND_CONFIG } from "./app-config.js";
 
-const SUPABASE_URL = "https://krdzhlsveetzcafurnqd.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtyZHpobHN2ZWV0emNhZnVybnFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMjk3NjYsImV4cCI6MjA5MTcwNTc2Nn0.50cV6-Q6k30tgHOoSht3Vod9vwvzSC7zuIkLvrW2RdE";
+const proxyBaseUrl = normalizeProxyBaseUrl(FRONTEND_CONFIG.proxyBaseUrl || "");
+const runtimeSupabaseConfig = await loadSupabaseRuntimeConfig();
+const SUPABASE_URL = runtimeSupabaseConfig.url;
+const SUPABASE_ANON_KEY = runtimeSupabaseConfig.anonKey;
 
 export function isSupabaseConfigured() {
   return (
@@ -20,6 +23,34 @@ export const supabase = isSupabaseConfigured()
       },
     })
   : null;
+
+async function loadSupabaseRuntimeConfig() {
+  if (!proxyBaseUrl || proxyBaseUrl.includes("PEGA_AQUI")) {
+    return { url: "", anonKey: "" };
+  }
+
+  try {
+    const response = await fetch(`${proxyBaseUrl}/api/supabase-config`, {
+      method: "GET",
+    });
+
+    if (!response.ok) {
+      return { url: "", anonKey: "" };
+    }
+
+    const data = await response.json();
+    return {
+      url: String(data?.supabaseUrl || ""),
+      anonKey: String(data?.supabaseAnonKey || ""),
+    };
+  } catch {
+    return { url: "", anonKey: "" };
+  }
+}
+
+function normalizeProxyBaseUrl(urlValue) {
+  return (urlValue || "").trim().replace(/\/+$/, "");
+}
 
 export function getAppUrl(pathname = "index.html") {
   const url = new URL(window.location.href);

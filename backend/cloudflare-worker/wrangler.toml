@@ -7,5 +7,6 @@ LLM_PROVIDER = "groq"
 LLM_MODEL = "llama-3.3-70b-versatile"
 LLM_TEMPERATURE = "0.2"
 LLM_MAX_TOKENS = "280"
+# SUPABASE_URL y SUPABASE_ANON_KEY se configuran como secretos con wrangler secret put.
 # Recomendado en produccion: tu dominio de GitHub Pages
 # ALLOWED_ORIGIN = "https://TU_USUARIO.github.io"

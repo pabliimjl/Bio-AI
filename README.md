@@ -21,10 +21,18 @@ Frontend estatico para GitHub Pages con backend proxy en Cloudflare Workers (par
 
 ## 2) Conectar frontend con el proxy
 
-1. Abre `scripts/script.js`.
-2. En `APP_CONFIG`, reemplaza `proxyBaseUrl` por la URL del Worker:
+1. Abre `scripts/app-config.js`.
+2. Reemplaza `proxyBaseUrl` por la URL del Worker:
    - `proxyBaseUrl: "https://bio-ai-proxy.<tu-subdominio>.workers.dev"`
 3. Haz commit y push.
+
+## 2.1) Supabase via proxy (sin hardcode en frontend)
+
+1. Carga secretos de Supabase en el Worker:
+   - `wrangler secret put SUPABASE_URL`
+   - `wrangler secret put SUPABASE_ANON_KEY`
+2. El frontend los consulta en runtime desde `/api/supabase-config`.
+3. No guardes esos valores en archivos versionados del frontend.
 
 ## 3) GitHub Pages
 

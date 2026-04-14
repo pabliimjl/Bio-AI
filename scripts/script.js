@@ -1,23 +1,11 @@
 import { getAppUrl, isSupabaseConfigured, supabase } from "./supabase-config.js";
+import { FRONTEND_CONFIG } from "./app-config.js";
 
 const APP_CONFIG = {
-  proxyBaseUrl: "PEGA_AQUI_URL_DEL_PROXY",
+  proxyBaseUrl: FRONTEND_CONFIG.proxyBaseUrl,
   llmModel: "meta-llama/llama-3.3-70b-instruct",
   llmTemperature: 0.2,
   llmMaxTokens: 280,
-};
-
-const PROVIDER_DEFAULTS = {
-  groq: {
-    endpoint: "https://api.groq.com/openai/v1/chat/completions",
-    model: "llama-3.3-70b-versatile",
-    label: "Groq",
-  },
-  openrouter: {
-    endpoint: "https://openrouter.ai/api/v1/chat/completions",
-    model: "meta-llama/llama-3.3-70b-instruct",
-    label: "OpenRouter",
-  },
 };
 
 const state = {
@@ -459,22 +447,6 @@ function normalizeError(error) {
   }
 
   return "Ocurrio un error inesperado durante el procesamiento.";
-}
-
-function detectLlmProvider(apiKey) {
-  if (!apiKey) {
-    return "";
-  }
-
-  if (apiKey.startsWith("gsk_")) {
-    return "groq";
-  }
-
-  if (apiKey.startsWith("sk-or-") || apiKey.startsWith("sk-or-v1-")) {
-    return "openrouter";
-  }
-
-  return "";
 }
 
 // ── Sidebar ──────────────────────────────────────────────────────────────────

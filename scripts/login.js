@@ -9,7 +9,7 @@ bootstrap();
 
 async function bootstrap() {
   if (!isSupabaseConfigured() || !supabase) {
-    setMessage("Configura SUPABASE_URL y SUPABASE_ANON_KEY en supabase-config.js para activar el login.", true);
+    setMessage("Configura APP_CONFIG.proxyBaseUrl para que el proxy entregue la configuracion de Supabase.", true);
     elements.googleLoginButton.disabled = true;
     return;
   }

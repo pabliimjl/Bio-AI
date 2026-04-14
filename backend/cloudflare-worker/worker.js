@@ -24,6 +24,10 @@ export default {
         return jsonResponse({ ok: true, service: "bio-ai-proxy" }, 200, origin, env.ALLOWED_ORIGIN);
       }
 
+      if (request.method === "GET" && url.pathname === "/api/supabase-config") {
+        return handleSupabaseConfigRequest(env, origin);
+      }
+
       if (request.method === "POST" && url.pathname === "/api/ocr") {
         return await handleOcrRequest(request, env, origin);
       }
@@ -130,6 +134,17 @@ async function handleLlmRequest(request, env, origin) {
       ...corsHeaders(origin, env.ALLOWED_ORIGIN),
     },
   });
+}
+
+function handleSupabaseConfigRequest(env, origin) {
+  const supabaseUrl = String(env.SUPABASE_URL || "").trim();
+  const supabaseAnonKey = String(env.SUPABASE_ANON_KEY || "").trim();
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return jsonResponse({ error: "Faltan SUPABASE_URL y/o SUPABASE_ANON_KEY en el Worker." }, 500, origin, env.ALLOWED_ORIGIN);
+  }
+
+  return jsonResponse({ supabaseUrl, supabaseAnonKey }, 200, origin, env.ALLOWED_ORIGIN);
 }
 
 function resolveLlmEndpoint(provider, customEndpoint) {
