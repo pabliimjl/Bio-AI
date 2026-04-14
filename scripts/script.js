@@ -1,9 +1,7 @@
 import { getAppUrl, isSupabaseConfigured, supabase } from "./supabase-config.js";
 
 const APP_CONFIG = {
-  ocrApiKey: "PEGA_AQUI_TU_OCR_API_KEY",
-  llmApiKey: "PEGA_AQUI_TU_LLM_API_KEY",
-  llmEndpoint: "https://openrouter.ai/api/v1/chat/completions",
+  proxyBaseUrl: "PEGA_AQUI_URL_DEL_PROXY",
   llmModel: "meta-llama/llama-3.3-70b-instruct",
   llmTemperature: 0.2,
   llmMaxTokens: 280,
@@ -77,7 +75,7 @@ async function bootstrap() {
   startNewChat();
 
   if (!configIsReady()) {
-    renderMessage("system", "Configura tus API keys en la constante APP_CONFIG dentro de script.js antes de usar OCR o el modelo.");
+    renderMessage("system", "Configura APP_CONFIG.proxyBaseUrl en script.js con la URL de tu backend proxy antes de usar OCR o el modelo.");
   }
 
   elements.imageInput.addEventListener("change", handleImageSelection);
@@ -284,6 +282,7 @@ async function requestClinicalAnalysis({ reportText, instruction }) {
 }
 
 async function extractTextWithOcrSpace(file) {
+  const ocrProxyUrl = getProxyUrl("/api/ocr");
   const formData = new FormData();
   formData.append("file", file);
   formData.append("language", "spa");
@@ -292,16 +291,14 @@ async function extractTextWithOcrSpace(file) {
   formData.append("scale", "true");
   formData.append("isTable", "true");
 
-  const response = await fetch("https://api.ocr.space/parse/image", {
+  const response = await fetch(ocrProxyUrl, {
     method: "POST",
-    headers: {
-      apikey: APP_CONFIG.ocrApiKey,
-    },
     body: formData,
   });
 
   if (!response.ok) {
-    throw new Error(`OCR.space devolvio ${response.status} ${response.statusText}.`);
+    const responseText = await response.text();
+    throw new Error(`El proxy de OCR devolvio ${response.status} ${response.statusText}. ${truncate(responseText, 280)}`);
   }
 
   const data = await response.json();
@@ -323,15 +320,14 @@ async function extractTextWithOcrSpace(file) {
 }
 
 async function callLlmApi(messages) {
-  const llmConfig = resolveLlmConfig();
-  const response = await fetch(llmConfig.endpoint, {
+  const llmProxyUrl = getProxyUrl("/api/llm");
+  const response = await fetch(llmProxyUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${APP_CONFIG.llmApiKey}`,
     },
     body: JSON.stringify({
-      model: llmConfig.model,
+      model: APP_CONFIG.llmModel.trim(),
       temperature: APP_CONFIG.llmTemperature,
       max_tokens: APP_CONFIG.llmMaxTokens,
       messages,
@@ -366,17 +362,12 @@ function buildSystemPrompt() {
 }
 
 function configIsReady() {
-  return !APP_CONFIG.ocrApiKey.includes("PEGA_AQUI") && !APP_CONFIG.llmApiKey.includes("PEGA_AQUI");
+  return hasProxyConfigured();
 }
 
 function validateLlmConfig() {
-  if (APP_CONFIG.llmApiKey.includes("PEGA_AQUI")) {
-    addMessage("system", "Falta configurar la API key del modelo dentro de APP_CONFIG en script.js.");
-    return false;
-  }
-
-  if (!APP_CONFIG.llmEndpoint.trim()) {
-    addMessage("system", "Falta el endpoint del modelo dentro de APP_CONFIG en script.js.");
+  if (!hasProxyConfigured()) {
+    addMessage("system", "Falta configurar APP_CONFIG.proxyBaseUrl en script.js con la URL del backend proxy.");
     return false;
   }
 
@@ -385,22 +376,34 @@ function validateLlmConfig() {
     return false;
   }
 
-  const provider = detectLlmProvider(APP_CONFIG.llmApiKey);
-  if (!provider) {
-    addMessage("system", "No pude identificar el proveedor de la API key del modelo. Configura una key valida de Groq u OpenRouter.");
-    return false;
-  }
-
   return true;
 }
 
 function validateFullConfig() {
-  if (APP_CONFIG.ocrApiKey.includes("PEGA_AQUI")) {
-    addMessage("system", "Falta configurar la API key de OCR.space dentro de APP_CONFIG en script.js.");
+  if (!hasProxyConfigured()) {
+    addMessage("system", "Falta configurar APP_CONFIG.proxyBaseUrl en script.js con la URL del backend proxy.");
     return false;
   }
 
   return validateLlmConfig();
+}
+
+function hasProxyConfigured() {
+  const proxyBaseUrl = normalizeProxyBaseUrl(APP_CONFIG.proxyBaseUrl || "");
+  return proxyBaseUrl.startsWith("https://") && !proxyBaseUrl.includes("PEGA_AQUI");
+}
+
+function getProxyUrl(pathname) {
+  const baseUrl = normalizeProxyBaseUrl(APP_CONFIG.proxyBaseUrl || "");
+  if (!baseUrl) {
+    throw new Error("APP_CONFIG.proxyBaseUrl no esta configurado.");
+  }
+
+  return `${baseUrl}${pathname.startsWith("/") ? pathname : `/${pathname}`}`;
+}
+
+function normalizeProxyBaseUrl(urlValue) {
+  return (urlValue || "").trim().replace(/\/+$/, "");
 }
 
 function setBusy(isBusy, label) {
@@ -472,31 +475,6 @@ function detectLlmProvider(apiKey) {
   }
 
   return "";
-}
-
-function resolveLlmConfig() {
-  const provider = detectLlmProvider(APP_CONFIG.llmApiKey);
-  if (provider === "groq") {
-    return {
-      provider,
-      endpoint: PROVIDER_DEFAULTS.groq.endpoint,
-      model: APP_CONFIG.llmModel.trim() === PROVIDER_DEFAULTS.openrouter.model ? PROVIDER_DEFAULTS.groq.model : APP_CONFIG.llmModel,
-    };
-  }
-
-  if (provider === "openrouter") {
-    return {
-      provider,
-      endpoint: APP_CONFIG.llmEndpoint.trim() || PROVIDER_DEFAULTS.openrouter.endpoint,
-      model: APP_CONFIG.llmModel.trim() || PROVIDER_DEFAULTS.openrouter.model,
-    };
-  }
-
-  return {
-    provider: "custom",
-    endpoint: APP_CONFIG.llmEndpoint.trim(),
-    model: APP_CONFIG.llmModel.trim(),
-  };
 }
 
 // ── Sidebar ──────────────────────────────────────────────────────────────────

@@ -1,0 +1,11 @@
+name = "bio-ai-proxy"
+main = "worker.js"
+compatibility_date = "2026-04-14"
+
+[vars]
+LLM_PROVIDER = "groq"
+LLM_MODEL = "llama-3.3-70b-versatile"
+LLM_TEMPERATURE = "0.2"
+LLM_MAX_TOKENS = "280"
+# Recomendado en produccion: tu dominio de GitHub Pages
+# ALLOWED_ORIGIN = "https://TU_USUARIO.github.io"
