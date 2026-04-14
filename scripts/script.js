@@ -10,6 +10,7 @@ const APP_CONFIG = {
 
 const OCR_PDF_PAGE_LIMIT = 3;
 let pdfLibPromise;
+let pdfJsPromise;
 
 const state = {
   selectedFile: null,
@@ -390,7 +391,7 @@ async function extractTextFromPdfInChunks(file) {
   try {
     ({ PDFDocument } = await loadPdfLib());
   } catch {
-    return extractTextWithOcrFile(file);
+    return extractTextFromPdfAsImages(file);
   }
 
   const sourceBytes = await file.arrayBuffer();
@@ -398,13 +399,21 @@ async function extractTextFromPdfInChunks(file) {
   try {
     sourcePdf = await PDFDocument.load(sourceBytes, { ignoreEncryption: true });
   } catch {
-    return extractTextWithOcrFile(file);
+    return extractTextFromPdfAsImages(file);
   }
 
   const totalPages = sourcePdf.getPageCount();
 
   if (totalPages <= OCR_PDF_PAGE_LIMIT) {
-    return extractTextWithOcrFile(file);
+    try {
+      return await extractTextWithOcrFile(file);
+    } catch (error) {
+      if (isNoUsableOcrTextError(error)) {
+        return extractTextFromPdfAsImages(file);
+      }
+
+      throw error;
+    }
   }
 
   const parts = [];
@@ -424,7 +433,18 @@ async function extractTextFromPdfInChunks(file) {
       type: "application/pdf",
     });
 
-    const chunkText = await extractTextWithOcrFile(chunkFile);
+    let chunkText = "";
+    try {
+      chunkText = await extractTextWithOcrFile(chunkFile);
+    } catch (error) {
+      if (isNoUsableOcrTextError(error)) {
+        const chunkImageFiles = await renderPdfFileToImages(chunkFile);
+        chunkText = await extractTextFromImageFiles(chunkImageFiles);
+      } else {
+        throw error;
+      }
+    }
+
     if (chunkText) {
       parts.push(chunkText);
     }
@@ -432,7 +452,18 @@ async function extractTextFromPdfInChunks(file) {
 
   const mergedText = parts.join("\n\n").trim();
   if (!mergedText) {
-    throw new Error("No se pudo extraer texto utilizable del PDF.");
+    return extractTextFromPdfAsImages(file);
+  }
+
+  return mergedText;
+}
+
+async function extractTextFromPdfAsImages(file) {
+  const imageFiles = await renderPdfFileToImages(file);
+  const mergedText = await extractTextFromImageFiles(imageFiles);
+
+  if (!mergedText) {
+    throw new Error("El OCR no devolvio texto utilizable.");
   }
 
   return mergedText;
@@ -495,6 +526,97 @@ async function loadPdfLib() {
   }
 
   return pdfLibPromise;
+}
+
+async function loadPdfJs() {
+  if (!pdfJsPromise) {
+    pdfJsPromise = import("https://esm.sh/pdfjs-dist@4.4.168/build/pdf.min.mjs").then(async (module) => {
+      module.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs";
+      return module;
+    });
+  }
+
+  return pdfJsPromise;
+}
+
+async function renderPdfFileToImages(file) {
+  const pdfjsLib = await loadPdfJs();
+  const sourceBytes = await file.arrayBuffer();
+
+  let pdfDocument;
+  try {
+    pdfDocument = await pdfjsLib.getDocument({
+      data: sourceBytes,
+      password: "",
+    }).promise;
+  } catch {
+    throw new Error("No pude abrir el PDF para OCR. Si tiene contrasena real, quitala antes de subirlo.");
+  }
+
+  const imageFiles = [];
+  const totalPages = pdfDocument.numPages;
+
+  for (let pageNumber = 1; pageNumber <= totalPages; pageNumber += 1) {
+    setStatus(`OCR PDF: pagina ${pageNumber} de ${totalPages}`);
+    const page = await pdfDocument.getPage(pageNumber);
+    const viewport = page.getViewport({ scale: 2 });
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d", { alpha: false });
+
+    if (!context) {
+      throw new Error("No pude preparar el lienzo para procesar el PDF.");
+    }
+
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+
+    await page.render({
+      canvasContext: context,
+      viewport,
+    }).promise;
+
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((value) => {
+        if (value) {
+          resolve(value);
+          return;
+        }
+
+        reject(new Error("No pude convertir una pagina del PDF a imagen."));
+      }, "image/png");
+    });
+
+    imageFiles.push(new File([
+      blob,
+    ], `${removeFileExtension(file.name)}_pagina_${pageNumber}.png`, {
+      type: "image/png",
+    }));
+  }
+
+  return imageFiles;
+}
+
+async function extractTextFromImageFiles(files) {
+  const parts = [];
+
+  for (const imageFile of files) {
+    try {
+      const text = await extractTextWithOcrFile(imageFile);
+      if (text) {
+        parts.push(text);
+      }
+    } catch (error) {
+      if (!isNoUsableOcrTextError(error)) {
+        throw error;
+      }
+    }
+  }
+
+  return parts.join("\n\n").trim();
+}
+
+function isNoUsableOcrTextError(error) {
+  return error instanceof Error && /ocr no devolvio texto utilizable/i.test(error.message);
 }
 
 function removeFileExtension(filename) {
