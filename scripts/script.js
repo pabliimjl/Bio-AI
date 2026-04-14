@@ -390,7 +390,6 @@ async function extractTextFromPdfInChunks(file) {
   try {
     ({ PDFDocument } = await loadPdfLib());
   } catch {
-    addMessage("system", "No pude dividir el PDF en bloques. Intento procesarlo completo en OCR.Space.");
     return extractTextWithOcrFile(file);
   }
 
@@ -401,8 +400,6 @@ async function extractTextFromPdfInChunks(file) {
   if (totalPages <= OCR_PDF_PAGE_LIMIT) {
     return extractTextWithOcrFile(file);
   }
-
-  addMessage("system", `PDF de ${totalPages} paginas detectado. Lo proceso en bloques de ${OCR_PDF_PAGE_LIMIT} paginas para evitar el limite de OCR.`);
 
   const parts = [];
   for (let startIndex = 0; startIndex < totalPages; startIndex += OCR_PDF_PAGE_LIMIT) {
@@ -423,7 +420,7 @@ async function extractTextFromPdfInChunks(file) {
 
     const chunkText = await extractTextWithOcrFile(chunkFile);
     if (chunkText) {
-      parts.push(`[Paginas ${startIndex + 1}-${endIndex}]\n${chunkText}`);
+      parts.push(chunkText);
     }
   }
 
@@ -473,15 +470,10 @@ async function extractTextWithOcrFile(file) {
 
   if (data.IsErroredOnProcessing) {
     if (parsedText && reachedPageLimit) {
-      addMessage("system", "OCR.Space limito el PDF a 3 paginas en este plan. Continuo con el analisis usando solo esas paginas.");
       return parsedText;
     }
 
     throw new Error(errorMessage || "OCR.space no pudo procesar la imagen.");
-  }
-
-  if (parsedText && reachedPageLimit) {
-    addMessage("system", "OCR.Space limito el PDF a 3 paginas en este plan. Continuo con el analisis usando solo esas paginas.");
   }
 
   if (!parsedText) {
