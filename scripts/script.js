@@ -605,24 +605,57 @@ async function renderPdfFileToImages(file) {
 
   let pdfDocument;
   let password = "";
+  let attempts = 0;
+  const maxAttempts = 3;
   
   // Try to open PDF, prompting for password if needed
-  while (true) {
+  while (attempts < maxAttempts) {
+    attempts += 1;
     try {
-      pdfDocument = await pdfjsLib.getDocument({
+      const options = {
         data: sourceBytes,
         password: password,
-      }).promise;
+      };
+      
+      // On third attempt without password, try ignoring encryption (for mobile compatibility)
+      if (attempts === 3 && !password) {
+        options.ignoreEncryption = true;
+      }
+      
+      pdfDocument = await pdfjsLib.getDocument(options).promise;
       break; // Successfully loaded
     } catch (error) {
-      // Check if it's a password error
-      if (error.message && (error.message.includes("UserPassword") || error.message.includes("OwnerPassword"))) {
-        // Ask user for password
+      // Log error details for debugging (especially Motorola issues)
+      console.warn(`PDF load attempt ${attempts} failed:`, {
+        name: error?.name,
+        message: error?.message,
+        type: typeof error,
+      });
+      
+      // Check if it's a password/encryption error (works on both Android and iOS)
+      const errorStr = `${error?.name || ""} ${error?.message || ""}`.toLowerCase();
+      const isPasswordError = 
+        errorStr.includes("userpassword") ||
+        errorStr.includes("ownerpassword") ||
+        errorStr.includes("password") ||
+        errorStr.includes("encrypted") ||
+        errorStr.includes("encryption") ||
+        error?.name === "PasswordException" ||
+        (typeof error === "number" && error === 13); // PDF.js error code 13
+      
+      if (isPasswordError && attempts === 1) {
+        // First password error: ask user for password
         password = await promptPdfPassword();
         if (password === null) {
           throw new Error("No se puede procesar un PDF protegido sin contraseña.");
         }
         // Loop will retry with the provided password
+      } else if (attempts === 2 && !password) {
+        // Second attempt: retry the same password for potential transient errors
+        continue;
+      } else if (attempts < maxAttempts) {
+        // Before failing, try again (third attempt will use ignoreEncryption if needed)
+        continue;
       } else {
         throw new Error("No pude abrir el PDF para OCR. Verifica que sea un archivo PDF válido.");
       }
