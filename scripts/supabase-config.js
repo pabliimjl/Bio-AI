@@ -1,16 +1,16 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+﻿import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { FRONTEND_CONFIG } from "./app-config.js";
 
 const proxyBaseUrl = normalizeProxyBaseUrl(FRONTEND_CONFIG.proxyBaseUrl || "");
 const runtimeSupabaseConfig = await loadSupabaseRuntimeConfig();
-const SUPABASE_URL = runtimeSupabaseConfig.url;
-const SUPABASE_ANON_KEY = runtimeSupabaseConfig.anonKey;
+const SUPABASE_URL = String(runtimeSupabaseConfig.url || "").trim();
+const SUPABASE_ANON_KEY = String(runtimeSupabaseConfig.anonKey || "").trim();
 
 export function isSupabaseConfigured() {
   return (
     SUPABASE_URL.startsWith("https://") &&
     !SUPABASE_URL.includes("TU-PROYECTO") &&
-    SUPABASE_ANON_KEY.startsWith("eyJ")
+    SUPABASE_ANON_KEY.replace(/^\s+/, "").startsWith("eyJ")
   );
 }
 
@@ -60,3 +60,4 @@ export function getAppUrl(pathname = "index.html") {
   url.hash = "";
   return url.toString();
 }
+
