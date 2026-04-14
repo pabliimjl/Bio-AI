@@ -75,13 +75,13 @@ async function bootstrap() {
     renderMessage("system", "Configura APP_CONFIG.proxyBaseUrl en script.js con la URL de tu backend proxy antes de usar OCR o el modelo.");
   }
 
-  elements.cameraInput.addEventListener("change", handleImageSelection);
-  elements.imageInput.addEventListener("change", handleImageSelection);
-  elements.fileInput.addEventListener("change", handleImageSelection);
-  elements.cameraInput.addEventListener("click", resetImageInputValue);
-  elements.imageInput.addEventListener("click", resetImageInputValue);
-  elements.fileInput.addEventListener("click", resetImageInputValue);
-  elements.mediaPickerButton.addEventListener("click", handleMediaPickerButtonClick);
+  elements.cameraInput?.addEventListener("change", handleImageSelection);
+  elements.imageInput?.addEventListener("change", handleImageSelection);
+  elements.fileInput?.addEventListener("change", handleImageSelection);
+  elements.cameraInput?.addEventListener("click", resetImageInputValue);
+  elements.imageInput?.addEventListener("click", resetImageInputValue);
+  elements.fileInput?.addEventListener("click", resetImageInputValue);
+  elements.mediaPickerButton?.addEventListener("click", handleMediaPickerButtonClick);
   elements.mediaPickerBackdrop?.addEventListener("click", closeMediaPickerModal);
   elements.mediaPickerCancel?.addEventListener("click", closeMediaPickerModal);
   elements.mediaPickerCamera?.addEventListener("click", () => openFileSource(elements.cameraInput));
@@ -104,8 +104,13 @@ function resetImageInputValue() {
 function handleMediaPickerButtonClick(event) {
   event.preventDefault();
 
+  if (!elements.mediaPickerModal) {
+    openDefaultImageSource();
+    return;
+  }
+
   if (!shouldUseMobileMediaPicker()) {
-    openFileSource(elements.imageInput);
+    openDefaultImageSource();
     return;
   }
 
@@ -118,7 +123,7 @@ function shouldUseMobileMediaPicker() {
 
 function openMediaPickerModal() {
   if (!elements.mediaPickerModal) {
-    openFileSource(elements.imageInput);
+    openDefaultImageSource();
     return;
   }
 
@@ -151,6 +156,10 @@ function openFileSource(inputElement) {
   closeMediaPickerModal();
   inputElement.value = "";
   inputElement.click();
+}
+
+function openDefaultImageSource() {
+  openFileSource(elements.imageInput || elements.cameraInput || elements.fileInput);
 }
 
 function handleChatInputKeydown(event) {
@@ -493,7 +502,15 @@ function normalizeProxyBaseUrl(urlValue) {
 function setBusy(isBusy, label) {
   state.busy = isBusy;
   elements.sendButton.disabled = isBusy;
-  elements.imageInput.disabled = isBusy;
+  if (elements.cameraInput) {
+    elements.cameraInput.disabled = isBusy;
+  }
+  if (elements.imageInput) {
+    elements.imageInput.disabled = isBusy;
+  }
+  if (elements.fileInput) {
+    elements.fileInput.disabled = isBusy;
+  }
   setStatus(label || (isBusy ? "Trabajando..." : "Listo"));
 }
 
@@ -954,9 +971,15 @@ async function selectConversation(id) {
   state.conversation = data.data?.conversation || [];
   state.displayMessages = data.data?.displayMessages || [];
   state.selectedFile = null;
-  elements.cameraInput.value = "";
-  elements.imageInput.value = "";
-  elements.fileInput.value = "";
+  if (elements.cameraInput) {
+    elements.cameraInput.value = "";
+  }
+  if (elements.imageInput) {
+    elements.imageInput.value = "";
+  }
+  if (elements.fileInput) {
+    elements.fileInput.value = "";
+  }
 
   elements.messages.innerHTML = "";
   for (const msg of state.displayMessages) {
@@ -1020,9 +1043,15 @@ function startNewChat() {
   state.currentConversationId = null;
 
   elements.messages.innerHTML = "";
-  elements.cameraInput.value = "";
-  elements.imageInput.value = "";
-  elements.fileInput.value = "";
+  if (elements.cameraInput) {
+    elements.cameraInput.value = "";
+  }
+  if (elements.imageInput) {
+    elements.imageInput.value = "";
+  }
+  if (elements.fileInput) {
+    elements.fileInput.value = "";
+  }
   renderMessage("assistant", "Pega valores del laboratorio o saca una foto del informe. El OCR y el analisis se ejecutan automaticamente. Luego puedes hacer preguntas de seguimiento.");
 
   document.querySelectorAll(".history-item").forEach(item => item.classList.remove("is-active"));
