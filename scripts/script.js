@@ -67,8 +67,18 @@ async function bootstrap() {
   }
 
   elements.imageInput.addEventListener("change", handleImageSelection);
+  elements.imageInput.addEventListener("click", resetImageInputValue);
   elements.chatForm.addEventListener("submit", handleFollowUp);
   elements.chatInput.addEventListener("keydown", handleChatInputKeydown);
+}
+
+function resetImageInputValue() {
+  if (!elements.imageInput) {
+    return;
+  }
+
+  // Permite que el evento change se dispare siempre, incluso si se repite archivo.
+  elements.imageInput.value = "";
 }
 
 function handleChatInputKeydown(event) {
@@ -178,6 +188,10 @@ async function handleImageSelection(event) {
     setStatus("Error en imagen", true);
     addMessage("system", normalizeError(error));
   } finally {
+    if (event.target instanceof HTMLInputElement) {
+      event.target.value = "";
+    }
+
     setBusy(false, state.reportContext ? "Listo para seguimiento" : "Esperando datos");
   }
 }
@@ -868,6 +882,7 @@ async function selectConversation(id) {
   state.conversation = data.data?.conversation || [];
   state.displayMessages = data.data?.displayMessages || [];
   state.selectedFile = null;
+  resetImageInputValue();
 
   elements.messages.innerHTML = "";
   for (const msg of state.displayMessages) {
@@ -931,6 +946,7 @@ function startNewChat() {
   state.currentConversationId = null;
 
   elements.messages.innerHTML = "";
+  resetImageInputValue();
   renderMessage("assistant", "Pega valores del laboratorio o saca una foto del informe. El OCR y el analisis se ejecutan automaticamente. Luego puedes hacer preguntas de seguimiento.");
 
   document.querySelectorAll(".history-item").forEach(item => item.classList.remove("is-active"));
