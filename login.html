@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bio AI | Acceso</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles/style.css" />
+</head>
+<body>
+  <main class="auth-shell">
+    <section class="auth-card" aria-label="Ingreso a Bio AI">
+      <img class="auth-banner" src="assets/banner.png" alt="Banner de Bio AI" />
+      <p class="auth-eyebrow">Acceso protegido</p>
+      <h1>Inicia sesion para usar Bio AI</h1>
+      <p class="auth-copy">En esta primera etapa el acceso sera con Google usando Supabase Auth. Si no tienes cuenta, Google te la crea o reutiliza la sesion existente.</p>
+      <button id="googleLoginButton" class="btn btn-primary auth-google" type="button">Continuar con Google</button>
+      <p id="authMessage" class="auth-message">Preparando autenticacion...</p>
+    </section>
+  </main>
+
+  <script type="module" src="scripts/login.js"></script>
+</body>
+</html>

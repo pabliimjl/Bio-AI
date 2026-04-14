@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bio AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles/style.css" />
+</head>
+<body>
+  <div class="app-layout">
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="sidebar" id="sidebar" aria-label="Menu lateral">
+      <div class="sidebar-top">
+        <button class="btn-new-chat" id="newChatButton" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Nueva consulta
+        </button>
+      </div>
+      <nav class="sidebar-history" aria-label="Historial de consultas">
+        <p class="sidebar-section-label">Historial</p>
+        <ul id="historyList" class="history-list"></ul>
+      </nav>
+      <div class="sidebar-pre-footer">
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Cambiar tema">Modo claro</button>
+      </div>
+      <div class="sidebar-footer">
+        <div class="user-info" id="userInfo">
+          <img class="user-avatar" id="userAvatar" src="" alt="" />
+          <span class="user-name" id="userName">Cargando...</span>
+        </div>
+        <button class="btn-signout" id="signOutButton" type="button" title="Cerrar sesion" aria-label="Cerrar sesion">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+          </svg>
+        </button>
+      </div>
+    </aside>
+
+    <main class="chat-app">
+      <section id="chatPanel" class="chat-panel" aria-label="Panel de chat clinico">
+        <header class="chat-header">
+          <button class="sidebar-toggle" id="sidebarToggle" aria-label="Abrir menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <path d="M3 6h18M3 12h18M3 18h18"/>
+            </svg>
+          </button>
+          <img class="header-banner" src="assets/banner.png" alt="Banner de Bio AI" />
+        </header>
+
+        <div id="messages" class="messages"></div>
+
+        <form id="chatForm" class="composer">
+          <input id="imageInput" type="file" accept="image/*" capture="environment" hidden />
+          <label class="sr-only" for="chatInput">Escribe valores o tu pregunta</label>
+          <div class="composer-input-wrap">
+            <textarea id="chatInput" rows="3" placeholder="Pega valores del laboratorio o escribe tu pregunta. Usa el icono de camara para escanear un informe."></textarea>
+            <div class="composer-actions">
+              <label class="icon-camera" for="imageInput" title="Sacar o subir foto del informe">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M9 4.5 7.6 6H5.5A2.5 2.5 0 0 0 3 8.5v9A2.5 2.5 0 0 0 5.5 20h13a2.5 2.5 0 0 0 2.5-2.5v-9A2.5 2.5 0 0 0 18.5 6h-2.1L15 4.5H9Zm3 4a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Zm0 1.5a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" />
+                </svg>
+              </label>
+              <button id="sendButton" class="btn btn-primary btn-send" type="submit" aria-label="Enviar mensaje" title="Enviar">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3.4 20.6 21 12 3.4 3.4l.2 6.5 9.9 2.1-9.9 2.1-.2 6.5Z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <div class="medical-note">
+          <strong>Uso responsable:</strong>
+          <span>La salida es orientativa y requiere validacion profesional, correlacion clinica y lectura del informe original.</span>
+        </div>
+      </section>
+    </main>
+
+  </div>
+
+  <div id="confirmModal" class="confirm-modal" aria-hidden="true">
+    <div class="confirm-modal-backdrop" id="confirmModalBackdrop"></div>
+    <div class="confirm-modal-card" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+      <h3 id="confirmModalTitle" class="confirm-modal-title">Confirmar accion</h3>
+      <p id="confirmModalText" class="confirm-modal-text">Seguro que deseas continuar?</p>
+      <div class="confirm-modal-actions">
+        <button id="confirmModalCancel" type="button" class="btn btn-ghost">Cancelar</button>
+        <button id="confirmModalConfirm" type="button" class="btn btn-primary">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="renameModal" class="confirm-modal" aria-hidden="true">
+    <div class="confirm-modal-backdrop" id="renameModalBackdrop"></div>
+    <div class="confirm-modal-card" role="dialog" aria-modal="true" aria-labelledby="renameModalTitle">
+      <h3 id="renameModalTitle" class="confirm-modal-title">Renombrar conversacion</h3>
+      <p class="confirm-modal-text">Escribe el nuevo nombre de la conversacion.</p>
+      <input id="renameModalInput" class="rename-modal-input" type="text" maxlength="80" />
+      <div class="confirm-modal-actions">
+        <button id="renameModalCancel" type="button" class="btn btn-ghost">Cancelar</button>
+        <button id="renameModalConfirm" type="button" class="btn btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="scripts/script.js"></script>
+</body>
+</html>
