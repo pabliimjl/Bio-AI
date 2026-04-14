@@ -60,6 +60,11 @@ const elements = {
   mediaPickerPhotos: document.querySelector("#mediaPickerPhotos"),
   mediaPickerFile: document.querySelector("#mediaPickerFile"),
   mediaPickerCancel: document.querySelector("#mediaPickerCancel"),
+  pdfPasswordModal: document.querySelector("#pdfPasswordModal"),
+  pdfPasswordBackdrop: document.querySelector("#pdfPasswordBackdrop"),
+  pdfPasswordInput: document.querySelector("#pdfPasswordInput"),
+  pdfPasswordCancel: document.querySelector("#pdfPasswordCancel"),
+  pdfPasswordConfirm: document.querySelector("#pdfPasswordConfirm"),
 };
 
 bootstrap();
@@ -144,6 +149,61 @@ function closeMediaPickerModal() {
   elements.mediaPickerModal.classList.remove("is-open");
   elements.mediaPickerModal.setAttribute("aria-hidden", "true");
   document.removeEventListener("keydown", handleMediaPickerKeydown);
+}
+
+function promptPdfPassword() {
+  return new Promise((resolve) => {
+    if (!elements.pdfPasswordModal || !elements.pdfPasswordInput || !elements.pdfPasswordCancel || !elements.pdfPasswordConfirm) {
+      const password = window.prompt("Este PDF está protegido con contraseña. Ingresa la contraseña:");
+      resolve(password);
+      return;
+    }
+
+    elements.pdfPasswordInput.value = "";
+    elements.pdfPasswordModal.classList.add("is-open");
+    elements.pdfPasswordModal.setAttribute("aria-hidden", "false");
+    elements.pdfPasswordInput.focus();
+
+    const cleanup = () => {
+      elements.pdfPasswordModal.classList.remove("is-open");
+      elements.pdfPasswordModal.setAttribute("aria-hidden", "true");
+      elements.pdfPasswordInput.value = "";
+      elements.pdfPasswordCancel.removeEventListener("click", onCancel);
+      elements.pdfPasswordConfirm.removeEventListener("click", onConfirm);
+      elements.pdfPasswordBackdrop?.removeEventListener("click", onCancel);
+      elements.pdfPasswordInput?.removeEventListener("keydown", onKeydown);
+      document.removeEventListener("keydown", onEscape);
+    };
+
+    const onCancel = () => {
+      cleanup();
+      resolve(null);
+    };
+
+    const onConfirm = () => {
+      const password = elements.pdfPasswordInput.value;
+      cleanup();
+      resolve(password || "");
+    };
+
+    const onKeydown = (event) => {
+      if (event.key === "Enter") {
+        onConfirm();
+      }
+    };
+
+    const onEscape = (event) => {
+      if (event.key === "Escape") {
+        onCancel();
+      }
+    };
+
+    elements.pdfPasswordCancel.addEventListener("click", onCancel);
+    elements.pdfPasswordConfirm.addEventListener("click", onConfirm);
+    elements.pdfPasswordBackdrop?.addEventListener("click", onCancel);
+    elements.pdfPasswordInput?.addEventListener("keydown", onKeydown);
+    document.addEventListener("keydown", onEscape);
+  });
 }
 
 function handleMediaPickerKeydown(event) {
@@ -544,13 +604,29 @@ async function renderPdfFileToImages(file) {
   const sourceBytes = await file.arrayBuffer();
 
   let pdfDocument;
-  try {
-    pdfDocument = await pdfjsLib.getDocument({
-      data: sourceBytes,
-      password: "",
-    }).promise;
-  } catch {
-    throw new Error("No pude abrir el PDF para OCR. Si tiene contrasena real, quitala antes de subirlo.");
+  let password = "";
+  
+  // Try to open PDF, prompting for password if needed
+  while (true) {
+    try {
+      pdfDocument = await pdfjsLib.getDocument({
+        data: sourceBytes,
+        password: password,
+      }).promise;
+      break; // Successfully loaded
+    } catch (error) {
+      // Check if it's a password error
+      if (error.message && (error.message.includes("UserPassword") || error.message.includes("OwnerPassword"))) {
+        // Ask user for password
+        password = await promptPdfPassword();
+        if (password === null) {
+          throw new Error("No se puede procesar un PDF protegido sin contraseña.");
+        }
+        // Loop will retry with the provided password
+      } else {
+        throw new Error("No pude abrir el PDF para OCR. Verifica que sea un archivo PDF válido.");
+      }
+    }
   }
 
   const imageFiles = [];

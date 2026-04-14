@@ -126,6 +126,19 @@
     </div>
   </div>
 
-  <script type="module" src="scripts/script.js?v=20260414"></script>
+  <div id="pdfPasswordModal" class="confirm-modal" aria-hidden="true">
+    <div class="confirm-modal-backdrop" id="pdfPasswordBackdrop"></div>
+    <div class="confirm-modal-card" role="dialog" aria-modal="true" aria-labelledby="pdfPasswordTitle">
+      <h3 id="pdfPasswordTitle" class="confirm-modal-title">PDF protegido con contraseña</h3>
+      <p class="confirm-modal-text">Este PDF tiene una contraseña. Ingresa la contraseña para procesarlo.</p>
+      <input id="pdfPasswordInput" class="rename-modal-input" type="password" placeholder="Contraseña del PDF" />
+      <div class="confirm-modal-actions">
+        <button id="pdfPasswordCancel" type="button" class="btn btn-ghost">Cancelar</button>
+        <button id="pdfPasswordConfirm" type="button" class="btn btn-primary">Desbloquear</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="scripts/script.js?v=20260414"></div>
 </body>
 </html>

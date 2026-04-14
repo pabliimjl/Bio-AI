@@ -1,0 +1,148 @@
+Estructura sugerida para subir esta app con backend dedicado
+
+Objetivo
+- Separar claramente frontend (UI) y backend (API/negocio/datos).
+- Facilitar despliegue, mantenimiento, escalabilidad y seguridad.
+
+1) Estructura de carpetas recomendada
+
+AppBQ/
+  frontend/
+    public/
+      logo.png
+      banner.jpg
+      ejemplo.png
+      ejemplo2.png
+    src/
+      index.html
+      style.css
+      script.js
+    .env
+    package.json
+    README.md
+
+  backend/
+    src/
+      app.js                # configuración principal del servidor
+      server.js             # arranque (puerto, entorno)
+      routes/
+        auth.routes.js
+        users.routes.js
+        pedidos.routes.js
+      controllers/
+        auth.controller.js
+        users.controller.js
+        pedidos.controller.js
+      services/
+        auth.service.js
+        users.service.js
+      models/
+        user.model.js
+        pedido.model.js
+      middlewares/
+        auth.middleware.js
+        error.middleware.js
+      config/
+        db.js
+        env.js
+      utils/
+        logger.js
+        validators.js
+    tests/
+      auth.test.js
+      users.test.js
+    .env
+    package.json
+    README.md
+
+  shared/
+    types/
+      api.types.js          # tipos/contratos compartidos (opcional)
+    constants/
+      api-endpoints.js
+
+  infra/
+    nginx/
+      nginx.conf            # reverse proxy
+    docker/
+      Dockerfile.frontend
+      Dockerfile.backend
+      docker-compose.yml
+    ci/
+      github-actions.yml    # build/test/deploy
+
+  .gitignore
+  README.md
+
+2) Cómo se conectan frontend y backend
+- Frontend consume backend vía HTTP/HTTPS (REST o GraphQL).
+- Definir URL de API por entorno:
+  - Desarrollo: http://localhost:3000
+  - Producción: https://api.tudominio.com
+- Guardar URL en variables de entorno del frontend (ejemplo: API_BASE_URL).
+
+3) Dominios recomendados
+- Frontend: https://tudominio.com
+- Backend: https://api.tudominio.com
+- Evitar mezclar lógica backend dentro del frontend.
+
+4) Flujo de despliegue típico
+- Paso 1: Subir backend (Railway, Render, Fly.io, VPS, etc.).
+- Paso 2: Configurar base de datos (PostgreSQL, MySQL, MongoDB).
+- Paso 3: Configurar variables de entorno del backend.
+- Paso 4: Subir frontend (Vercel, Netlify, Cloudflare Pages, Nginx).
+- Paso 5: Configurar API_BASE_URL del frontend apuntando al backend real.
+- Paso 6: Configurar CORS en backend para permitir solo tu dominio frontend.
+- Paso 7: Activar HTTPS en ambos dominios.
+
+5) Variables de entorno mínimas
+
+Frontend (.env)
+- API_BASE_URL=https://api.tudominio.com
+
+Backend (.env)
+- PORT=3000
+- NODE_ENV=production
+- DATABASE_URL=...
+- JWT_SECRET=...
+- CORS_ORIGIN=https://tudominio.com
+
+6) Seguridad mínima recomendada
+- Validar entradas en todas las rutas.
+- Usar autenticación (JWT/sesión) según caso.
+- No exponer secretos en frontend.
+- Limitar CORS a dominios autorizados.
+- Usar rate limiting y logs de errores.
+
+7) Escalabilidad (cuando crezca)
+- Backend stateless para replicar instancias.
+- Cache (Redis) para respuestas frecuentes.
+- CDN para imágenes/estáticos.
+- Colas para tareas pesadas (emails, reportes, etc.).
+
+8) Si quieres adaptar tu estructura actual rápidamente
+Como hoy tienes:
+- index.html
+- style.css
+- script.js
+
+Puedes pasar a:
+AppBQ/
+  frontend/
+    index.html
+    style.css
+    script.js
+  backend/
+    src/
+      server.js
+      routes/
+      controllers/
+      services/
+
+Con eso ya quedas listo para separar responsabilidades y desplegar profesionalmente.
+
+Resumen corto
+- Sí conviene dividir en frontend + backend + (opcional shared/infra).
+- Usa dominios separados (app y api).
+- Configura variables por entorno y CORS/HTTPS correctamente.
+- Esta base te permite crecer sin rehacer todo después.
