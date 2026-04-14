@@ -394,7 +394,13 @@ async function extractTextFromPdfInChunks(file) {
   }
 
   const sourceBytes = await file.arrayBuffer();
-  const sourcePdf = await PDFDocument.load(sourceBytes);
+  let sourcePdf;
+  try {
+    sourcePdf = await PDFDocument.load(sourceBytes, { ignoreEncryption: true });
+  } catch {
+    return extractTextWithOcrFile(file);
+  }
+
   const totalPages = sourcePdf.getPageCount();
 
   if (totalPages <= OCR_PDF_PAGE_LIMIT) {
