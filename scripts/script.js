@@ -68,6 +68,16 @@ async function bootstrap() {
 
   elements.imageInput.addEventListener("change", handleImageSelection);
   elements.chatForm.addEventListener("submit", handleFollowUp);
+  elements.chatInput.addEventListener("keydown", handleChatInputKeydown);
+}
+
+function handleChatInputKeydown(event) {
+  if (event.key !== "Enter" || event.shiftKey || event.isComposing) {
+    return;
+  }
+
+  event.preventDefault();
+  elements.chatForm.requestSubmit();
 }
 
 async function requireAuthenticatedSession() {
